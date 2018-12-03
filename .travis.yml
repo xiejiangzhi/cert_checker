@@ -1,7 +1,20 @@
 ---
 sudo: false
+dist: trusty
 language: ruby
+
 cache: bundler
+
 rvm:
+  - 2.1.10
+  - 2.2.10
+  - 2.3.8
+  - 2.4.5
   - 2.5.3
-before_install: gem install bundler -v 1.17.1
+
+before_install:
+  - gem install bundler --no-doc
+
+script:
+  - bundle exec rspec
+  - bundle exec rubocop
