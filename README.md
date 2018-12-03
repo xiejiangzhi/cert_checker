@@ -1,28 +1,76 @@
 # CertChecker
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/cert_checker`. To experiment with that code, run `bin/console` for an interactive prompt.
-
-TODO: Delete this and the text above, and describe your gem
+A tool to check X509 cert status
 
 ## Installation
 
-Add this line to your application's Gemfile:
-
-```ruby
-gem 'cert_checker'
+```
+$ gem install cert_checker
 ```
 
-And then execute:
+## Command Line Usage
 
-    $ bundle
 
-Or install it yourself as:
+```
+$ cert_checker
+cert_checker [-d domain_or_ip] [-f hosts_file]
+    -d host                          host name, example google.com. more host: -h h1.com -h h2.com
+    -f file                          hosts file, split hosts by new line, and ignore line whice start by # and empt line
+```
 
-    $ gem install cert_checker
+### Examples
 
-## Usage
+```
+$ cert_checker -d taobao.com -d xjz.pw
+ok             taobao.com                          GlobalSign nv-sa     2019-11-13 344 days
+ok             xjz.pw                              Let's Encrypt        2019-02-18 76 days
 
-TODO: Write usage instructions here
+$ cat >> myhosts <<EOF
+# A
+xjz.pw
+
+# B
+taobao.com
+jd.com
+EOF
+
+$ cert_checker -f myhosts
+ok             xjz.pw                              Let's Encrypt        2019-02-18 76 days
+ok             taobao.com                          GlobalSign nv-sa     2019-11-13 344 days
+ok             jd.com                              GlobalSign nv-sa     2019-09-28 298 days
+```
+
+## Code Usage 
+
+```
+require 'cert_checker'
+
+status, host, issuer, expired, desc = CertChecker.check('taobao.com')
+
+# Other port and timeout
+port = 443 # default
+status, host, issuer, expired, desc = CertChecker.check('taobao.com', port, timeout: 5)
+```
+
+**Add your root cert**
+
+```
+CertChecker.cert_store.add_cert(root_ca)
+
+# It will trust certs which signed by this root ca
+status, host, issuer, expired, desc = CertChecker.check('mydomain.com', port, timeout: 3)
+```
+
+**Multiple cert store instance**
+
+```
+class MyChecker
+  include CertChecker
+end
+
+MyChecker.cert_store.add_cert(root_ca)
+status, host, issuer, expired, desc = MyChecker.check('mydomain.com', port, timeout: 3)
+```
 
 ## Development
 
@@ -32,7 +80,7 @@ To install this gem onto your local machine, run `bundle exec rake install`. To 
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/cert_checker.
+Bug reports and pull requests are welcome on GitHub at https://github.com/xiejiangzhi/cert_checker.
 
 ## License
 

@@ -1,0 +1,42 @@
+#! /usr/bin/env ruby
+
+require 'cert_checker'
+require 'optparse'
+
+options = { hosts: [] }
+
+parser = OptionParser.new do |opts|
+  opts.banner = "cert_checker [-d domain_or_ip] [-f hosts_file]"
+  opts.version = CertChecker::VERSION
+
+  opts.on('-d domain', "host name, example google.com. more host: -d h1.com -d h2.com") do |host|
+    options[:hosts] << host
+  end
+
+  opts.on(
+    '-f file', "hosts file, split hosts by new line, and ignore line whice start by # and empt line"
+  ) do |file|
+    options[:file] = file
+  end
+end
+
+parser.parse!
+
+hosts = options[:hosts]
+if (file = options[:file]) && File.exists?(file)
+  hosts += File.readlines(file).map(&:strip).select { |host| host.size > 0 && host[0] != '#' }
+end
+
+puts parser.help if hosts.empty?
+
+format = "%-14s %-35s %-20s %10s %s"
+hosts.each do |host|
+  begin
+    status, host, issuer, expired, desc = CertChecker.check(host)
+    expired = expired.strftime('%F') if expired
+    desc = desc.to_s + ' days' if desc.to_s =~ /^\d+$/
+    puts format % [status, host, issuer, expired, desc]
+  rescue CertChecker::Error => e
+    puts format % ['error', e.message]
+  end
+end
