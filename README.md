@@ -1,5 +1,9 @@
 # CertChecker
 
+
+[![Build Status](https://travis-ci.org/xiejiangzhi/cert_checker.svg?branch=master)](https://travis-ci.org/xiejiangzhi/cert_checker)
+[![Gem Version](https://badge.fury.io/rb/cert_checker.svg)](https://badge.fury.io/rb/cert_checker)
+
 A tool to check X509 cert status
 
 ## Installation
