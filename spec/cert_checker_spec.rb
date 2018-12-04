@@ -152,5 +152,12 @@ RSpec.describe CertChecker do
         "unable to get local issuer certificate"
       ])
     end
+
+    it 'should return failed status if failed to get a cert' do
+      allow(CertChecker).to receive(:get_cert).with(host, port).and_return(nil)
+      expect(CertChecker.check(host, port)).to eql([
+        :failed, "localhost", nil, nil, nil
+      ])
+    end
   end
 end

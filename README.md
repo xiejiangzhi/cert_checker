@@ -76,6 +76,15 @@ MyChecker.cert_store.add_cert(root_ca)
 status, host, issuer, expired, desc = MyChecker.check('mydomain.com', port, timeout: 3)
 ```
 
+## All Status
+
+* failed: Failed to get the cert
+* unverifiable: Invalid cert chain or cannot verify it.
+* expired: The cert is expired
+* urgent: The cert expires in 15 days.
+* warning: The cert expires in 30 days.
+* ok: Not found problem
+
 ## Contributing
 
 Bug reports and pull requests are welcome on GitHub at https://github.com/xiejiangzhi/cert_checker.

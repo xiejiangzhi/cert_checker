@@ -46,8 +46,8 @@ module CertChecker
 
   # @return [status_symbol, host, issuer, expired_at, desc]
   def check(host, *args)
-    cert, verify_result, cert_chain, err_str = verify(host, *args)
-    return ['failed', host, nil, nil, nil] unless cert
+    cert, verify_result, _cert_chain, err_str = verify(host, *args)
+    return [:failed, host, nil, nil, nil] unless cert
     status_sym = :unverifiable unless verify_result
 
     issuer = get_cert_issuer_name(cert)
