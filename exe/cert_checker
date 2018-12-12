@@ -37,6 +37,6 @@ hosts.each do |host|
     desc = desc.to_s + ' days' if desc.to_s =~ /^\d+$/
     puts format % [status, host, issuer, expired, desc]
   rescue CertChecker::Error => e
-    puts format % ['error', e.message]
+    puts format % ['error', host, e.message, nil, nil]
   end
 end
