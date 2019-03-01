@@ -37,6 +37,7 @@ RSpec.describe CertChecker do
     OpenSSL::SSL::SSLContext.new.tap do |ctx|
       ctx.key = key
       ctx.cert = cert
+      ctx.alpn_select_cb = lambda { |ps| ps.first }
     end
   end
   let(:ssl_server) { OpenSSL::SSL::SSLServer.new(tcp_server, ssl_ctx) }
@@ -85,14 +86,14 @@ RSpec.describe CertChecker do
       expect(CertChecker).to receive(:get_cert).with(host, port).and_return([cert, [cert]])
       expect(CertChecker.cert_store).to receive(:verify).with(cert, [cert]).and_call_original
       expect(CertChecker.verify(host, port)).to eql([
-        cert, false, [cert], "unable to get local issuer certificate"
+        cert, false, [cert], nil, "unable to get local issuer certificate"
       ])
     end
 
     it 'should return true if cert is believable' do
       expect(CertChecker).to receive(:get_cert).with(host, port).and_return([cert, [cert]])
       CertChecker.cert_store.add_cert(root_ca)
-      expect(CertChecker.verify(host, port)).to eql([cert, true, [cert], nil])
+      expect(CertChecker.verify(host, port)).to eql([cert, true, [cert], nil, nil])
     end
 
     it 'should return true if cert is believable' do
@@ -107,7 +108,7 @@ RSpec.describe CertChecker do
       allow(CertChecker).to receive(:get_cert).with(host, port).and_return([cert, [cert]])
       CertChecker.cert_store.add_cert(root_ca)
       expect(CertChecker.check(host, port)).to eql([
-        :ok, "localhost", "CertChecker", time + 3600 * 24 * 60, 60
+        :ok, "localhost", "CertChecker", time + 3600 * 24 * 60, 60, nil
       ])
     end
 
@@ -116,22 +117,22 @@ RSpec.describe CertChecker do
       allow(CertChecker).to receive(:get_cert).with(host, port).and_return([cert, [cert]])
       CertChecker.cert_store.add_cert(root_ca)
       expect(CertChecker.check(host, port)).to eql([
-        :warning, "localhost", "CertChecker", time + 3600 * 24 * 60, 30
+        :warning, "localhost", "CertChecker", time + 3600 * 24 * 60, 30, nil
       ])
 
       allow(Time).to receive(:now).and_return(time + 3600 * 24 * 50)
       expect(CertChecker.check(host, port)).to eql([
-        :urgent, "localhost", "CertChecker", time + 3600 * 24 * 60, 10
+        :urgent, "localhost", "CertChecker", time + 3600 * 24 * 60, 10, nil
       ])
 
       allow(Time).to receive(:now).and_return(time + 3600 * 24 * 60)
       expect(CertChecker.check(host, port)).to eql([
-        :expired, "localhost", "CertChecker", time + 3600 * 24 * 60, 0
+        :expired, "localhost", "CertChecker", time + 3600 * 24 * 60, 0, nil
       ])
 
       allow(Time).to receive(:now).and_return(time + 3600 * 24 * 70)
       expect(CertChecker.check(host, port)).to eql([
-        :expired, "localhost", "CertChecker", time + 3600 * 24 * 60, 0
+        :expired, "localhost", "CertChecker", time + 3600 * 24 * 60, 0, nil
       ])
     end
 
@@ -140,7 +141,7 @@ RSpec.describe CertChecker do
       allow(CertChecker).to receive(:get_cert).and_return([cert, [cert]])
       CertChecker.cert_store.add_cert(root_ca)
       expect(CertChecker.check('127.0.0.1', port)).to eql([
-        :not_match, "127.0.0.1", "CertChecker", time + 3600 * 24 * 60, 60
+        :not_match, "127.0.0.1", "CertChecker", time + 3600 * 24 * 60, 60, nil
       ])
     end
 
@@ -149,7 +150,7 @@ RSpec.describe CertChecker do
       allow(CertChecker).to receive(:get_cert).and_return([cert, [cert]])
       expect(CertChecker.check(host, port)).to eql([
         :unverifiable, host, "CertChecker", time + 3600 * 24 * 60,
-        "unable to get local issuer certificate"
+        "unable to get local issuer certificate", nil
       ])
     end
 

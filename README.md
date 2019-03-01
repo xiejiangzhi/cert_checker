@@ -25,9 +25,12 @@ cert_checker [-d domain_or_ip] [-f hosts_file]
 ### Examples
 
 ```
-$ cert_checker -d taobao.com -d xjz.pw
-ok             taobao.com                          GlobalSign nv-sa     2019-11-13 344 days
-ok             xjz.pw                              Let's Encrypt        2019-02-18 76 days
+$ cert_checker -d taobao.com -d xjz.pw -d slack.com -d asdf.com
+ok             taobao.com                          GlobalSign nv-sa     2019-11-13 344 days (http/1.1)
+ok             xjz.pw                              Let's Encrypt        2019-02-18 76 days (http/1.1)
+ok             slack.com                           DigiCert Inc         2021-02-12 714 days (h2)
+ok             asdf.com                            Let's Encrypt        2019-04-08 38 days (No ALPN)
+
 
 $ cat >> myhosts <<EOF
 # A
@@ -39,9 +42,9 @@ jd.com
 EOF
 
 $ cert_checker -f myhosts
-ok             xjz.pw                              Let's Encrypt        2019-02-18 76 days
-ok             taobao.com                          GlobalSign nv-sa     2019-11-13 344 days
-ok             jd.com                              GlobalSign nv-sa     2019-09-28 298 days
+ok             xjz.pw                              Let's Encrypt        2019-02-18 76 days (http/1.1)
+ok             taobao.com                          GlobalSign nv-sa     2019-11-13 344 days (http/1.1)
+ok             jd.com                              GlobalSign nv-sa     2019-09-28 298 days (http/1.1)
 ```
 
 ## Code Usage 
@@ -49,11 +52,11 @@ ok             jd.com                              GlobalSign nv-sa     2019-09-
 ```
 require 'cert_checker'
 
-status, host, issuer, expired, desc = CertChecker.check('taobao.com')
+status, host, issuer, expired, desc, alpn_protocol = CertChecker.check('taobao.com')
 
 # Other port and timeout
 port = 443 # default
-status, host, issuer, expired, desc = CertChecker.check('taobao.com', port, timeout: 5)
+status, host, issuer, expired, desc, alpn_protocol = CertChecker.check('taobao.com', port, timeout: 5)
 ```
 
 **Add your root cert**
@@ -62,7 +65,7 @@ status, host, issuer, expired, desc = CertChecker.check('taobao.com', port, time
 CertChecker.cert_store.add_cert(root_ca)
 
 # It will trust certs which signed by this root ca
-status, host, issuer, expired, desc = CertChecker.check('mydomain.com', port, timeout: 3)
+status, host, issuer, expired, desc, alpn_protocol = CertChecker.check('mydomain.com', port, timeout: 3)
 ```
 
 **Multiple cert store instance**
@@ -73,7 +76,7 @@ class MyChecker
 end
 
 MyChecker.cert_store.add_cert(root_ca)
-status, host, issuer, expired, desc = MyChecker.check('mydomain.com', port, timeout: 3)
+status, host, issuer, expired, desc, alpn_protocol = MyChecker.check('mydomain.com', port, timeout: 3)
 ```
 
 ## All Status

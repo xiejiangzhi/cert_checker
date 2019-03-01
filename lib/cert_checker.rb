@@ -15,7 +15,7 @@ module CertChecker
 
   def get_cert(host, port = 443, timeout: DEFAULT_TIMEOUT)
     tcp_client = Socket.tcp(host, port, connect_timeout: timeout)
-    ssl_client = OpenSSL::SSL::SSLSocket.new(tcp_client)
+    ssl_client = OpenSSL::SSL::SSLSocket.new(tcp_client, new_ctx)
     ssl_client.hostname = host
 
     begin
@@ -26,7 +26,7 @@ module CertChecker
       retry if IO.select(nil, [ssl_client], nil, timeout)
     end
 
-    [ssl_client.peer_cert, ssl_client.peer_cert_chain].tap do
+    [ssl_client.peer_cert, ssl_client.peer_cert_chain, ssl_client.alpn_protocol].tap do
       ssl_client.close
       tcp_client.close
     end
@@ -36,17 +36,17 @@ module CertChecker
 
   # @return [cert, verify_result, cert_chain, err_str]
   def verify(host, *args)
-    cert, cert_chain = get_cert(host, *args)
+    cert, cert_chain, alpn_protocol = get_cert(host, *args)
     if cert
       err = nil
       result = cert_store.verify(cert, cert_chain) { |r, s| err = s.error_string unless r; r }
-      [cert, result, cert_chain, err]
+      [cert, result, cert_chain, alpn_protocol, err]
     end
   end
 
   # @return [status_symbol, host, issuer, expired_at, desc]
   def check(host, *args)
-    cert, verify_result, _cert_chain, err_str = verify(host, *args)
+    cert, verify_result, _cert_chain, alpn_protocol, err_str = verify(host, *args)
     return [:failed, host, nil, nil, nil] unless cert
     status_sym = :unverifiable unless verify_result
 
@@ -63,7 +63,7 @@ module CertChecker
     else :ok
     end
 
-    [status_sym, host, issuer, expired_at, desc]
+    [status_sym, host, issuer, expired_at, desc, alpn_protocol]
   end
 
   def cert_store
@@ -73,6 +73,12 @@ module CertChecker
   end
 
   private
+
+  def new_ctx
+    OpenSSL::SSL::SSLContext.new.tap do |ctx|
+      ctx.alpn_protocols = %w{http/1.1 h2}
+    end
+  end
 
   def verify_cert_dns(host, cert)
     dns_ext = cert.extensions.find { |e| e.oid == 'subjectAltName' }
