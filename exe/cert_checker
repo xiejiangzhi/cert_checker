@@ -29,14 +29,15 @@ end
 
 puts parser.help if hosts.empty?
 
-format = "%-14s %-35s %-20s %10s %s"
+format = "%-14s %-35s %-20s %10s %s (%s)"
 hosts.each do |host|
   begin
-    status, host, issuer, expired, desc = CertChecker.check(host)
+    status, host, issuer, expired, desc, alpn_protocol = CertChecker.check(host)
     expired = expired.strftime('%F') if expired
     desc = desc.to_s + ' days' if desc.to_s =~ /^\d+$/
-    puts format % [status, host, issuer, expired, desc]
+    alpn_protocol ||= 'No ALPN'
+    puts format % [status, host, issuer, expired, desc, alpn_protocol]
   rescue CertChecker::Error => e
-    puts format % ['error', host, e.message, nil, nil]
+    puts format % ['error', host, e.message, nil, nil, nil]
   end
 end
